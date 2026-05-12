@@ -91,4 +91,112 @@
     <p class="address">📍 Ул. Грибалевой 12</p>
   </div>
   <div class="form-section">
-    <div class="section-title">Ре
+    <div class="section-title">Регистрация на трапезу</div>
+    <div class="field"><label>Имя и фамилия</label><input id="name" type="text" placeholder="Введите ваше имя" /></div>
+    <div class="field"><label>Телефон</label><input id="phone" type="tel" placeholder="+7..." /></div>
+  </div>
+  <div class="form-section">
+    <div class="section-title">Выбор стоимости</div>
+    <div class="price-option" id="opt-youth" onclick="selectPrice('youth')">
+      <div><div class="price-name">Студенты, молодёжь и дети</div><div class="price-sub-text">Льготная цена</div><div class="price-badge">Специальная цена</div></div>
+      <div class="price-amount">1 000 ₽</div>
+    </div>
+    <div class="price-option sel-sub" id="opt-subsidized" onclick="selectPrice('subsidized')">
+      <div><div class="price-name">Субсидированная цена</div><div class="price-sub-text">Стандартная цена для всех</div></div>
+      <div class="price-amount">1 500 ₽</div>
+    </div>
+    <div class="price-option" id="opt-full" onclick="selectPrice('full')">
+      <div><div class="price-name">Полная цена</div><div class="price-sub-text">Спасибо за вашу поддержку!</div><div class="price-badge-green">Поддержка общины</div></div>
+      <div class="price-amount">3 000 ₽</div>
+    </div>
+  </div>
+  <div class="form-section">
+    <div class="section-title">Количество участников</div>
+    <div class="counter-row">
+      <button class="counter-btn" onclick="change(-1)">−</button>
+      <div class="counter-display"><div class="counter-num" id="count">1</div><div class="counter-label" id="count-label">человек</div></div>
+      <button class="counter-btn" onclick="change(1)">+</button>
+    </div>
+    <input type="range" id="slider" min="1" max="20" value="1" step="1" oninput="syncFromSlider()" />
+    <div class="slider-labels"><span>1</span><span>20</span></div>
+  </div>
+  <div class="total-box">
+    <div class="total-row"><span>Цена за человека</span><span id="price-per">1 500 ₽</span></div>
+    <div class="total-row"><span>Количество участников</span><span id="count2">× 1</span></div>
+    <div class="total-final"><span class="total-label">Итого к оплате</span><span class="total-amount" id="total">1 500 ₽</span></div>
+  </div>
+  <div class="form-section">
+    <div class="section-title">Реквизиты для оплаты</div>
+    <p style="font-size:13px; color:#6b3a2a; margin-bottom:8px;">Переведите итоговую сумму на банковскую карту:</p>
+    <div class="card-box"><span class="card-number">8 9119 9637 76</span><button class="copy-btn" id="copy-btn" onclick="copyCard()">Копировать</button></div>
+    <p class="note-text">После перевода, пожалуйста, отправьте подтверждение раввину</p>
+  </div>
+  <button class="submit-btn" id="submit-btn" onclick="submitForm()">Отправить регистрацию</button>
+  <div class="success-box" id="success-msg">
+    <div class="success-title">Регистрация принята! 🎉</div>
+    <div class="success-detail" id="success-detail"></div>
+  </div>
+  <div class="footer-ornament">✦ &nbsp; ✦ &nbsp; ✦</div>
+</div>
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwIDbH6APelW2FK63gCLuDeq1h7JqxKdJj1-iEAJxD-3O10wr69gAt0x-rs48JjFX8q/exec';
+let count = 1, priceType = 'subsidized';
+const PRICES = { youth: 1000, subsidized: 1500, full: 3000 };
+const LABELS = { youth: 'Студенты/молодёжь/дети (1 000 ₽)', subsidized: 'Субсидированная (1 500 ₽)', full: 'Полная (3 000 ₽)' };
+function fmt(n) { return n.toLocaleString('ru-RU') + ' ₽'; }
+function selectPrice(type) {
+  priceType = type;
+  ['youth','subsidized','full'].forEach(t => {
+    const el = document.getElementById('opt-' + t);
+    el.className = 'price-option';
+    if (t === type) el.className += t === 'youth' ? ' sel-youth' : t === 'subsidized' ? ' sel-sub' : ' sel-full';
+  });
+  update();
+}
+function update() {
+  const price = PRICES[priceType];
+  document.getElementById('count').textContent = count;
+  document.getElementById('count2').textContent = '× ' + count;
+  document.getElementById('price-per').textContent = fmt(price);
+  document.getElementById('total').textContent = fmt(count * price);
+  document.getElementById('slider').value = count;
+  document.getElementById('count-label').textContent = count === 1 ? 'человек' : count < 5 ? 'человека' : 'человек';
+}
+function change(delta) { count = Math.max(1, Math.min(20, count + delta)); update(); }
+function syncFromSlider() { count = parseInt(document.getElementById('slider').value); update(); }
+function copyCard() {
+  navigator.clipboard.writeText('89119963776').then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = 'Скопировано!';
+    setTimeout(() => { btn.textContent = 'Копировать'; }, 2000);
+  });
+}
+async function submitForm() {
+  const name = document.getElementById('name').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  if (!name) { alert('Пожалуйста, введите имя'); return; }
+  const total = count * PRICES[priceType];
+  const btn = document.getElementById('submit-btn');
+  btn.textContent = 'Отправка...'; btn.disabled = true;
+  document.getElementById('success-msg').style.display = 'none';
+  try {
+    const params = new URLSearchParams({
+      name, phone: phone || '—', guests: count,
+      price_type: LABELS[priceType], total,
+      event: 'Трапеза Шавуот — Маор 20:20',
+      timestamp: new Date().toLocaleString('ru-RU')
+    });
+    await fetch(SCRIPT_URL + '?' + params.toString(), { method: 'GET', mode: 'no-cors' });
+  } catch(e) {}
+  const gw = count === 1 ? 'человек' : count < 5 ? 'человека' : 'человек';
+  document.getElementById('success-detail').textContent = name + ' — ' + count + ' ' + gw + ' · ' + fmt(total) + ' (' + LABELS[priceType] + ')';
+  document.getElementById('success-msg').style.display = 'block';
+  document.getElementById('success-msg').scrollIntoView({ behavior: 'smooth' });
+  btn.textContent = 'Отправить регистрацию'; btn.disabled = false;
+  document.getElementById('name').value = ''; document.getElementById('phone').value = '';
+  count = 1; selectPrice('subsidized');
+}
+selectPrice('subsidized');
+</script>
+</body>
+</html>
